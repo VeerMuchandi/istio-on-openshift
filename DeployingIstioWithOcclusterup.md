@@ -26,6 +26,18 @@ To start an OpenShift cluster on your box run the following command.
 
 ```
 $ oc cluster up
+Starting OpenShift using openshift/origin:v3.7.0-alpha.1 ...
+OpenShift server started.
+
+The server is accessible via web console at:
+    https://127.0.0.1:8443
+
+You are logged in as:
+    User:     developer
+    Password: <any value>
+
+To login as administrator:
+    oc login -u system:admin
 ```
 
 This will download and start an OpenShift all-in-one image and start this image to run OpenShift on your workstation. It will also provide you a URL for your master (on Mac it gives https://127.0.0.1:8443 by default) and creates a user `developer` which you can use with any password of your choice. It will also log you in as `developer` by default. Also you will have a project named `myproject` created to use.
@@ -53,6 +65,9 @@ Set the path to `istioctl` binary or copy to a location where it can run. As an 
 ```
 $ cp bin/istioctl /usr/local/bin
 
+$ which istioctl
+/usr/local/bin/istioctl
+
 $ istioctl version
 Version: 0.2.7
 GitRevision: 6b145c189aad8306b13af1725123bebfbc7eefd4
@@ -69,6 +84,18 @@ When you started the cluster. You were logged in as the user `developer`. In ord
 
 ```
 $ oc login -u system:admin
+Logged into "https://127.0.0.1:8443" as "system:admin" using existing credentials.
+
+You have access to the following projects and can switch between them with 'oc project <projectname>':
+
+    default
+    kube-public
+    kube-system
+  * myproject
+    openshift
+    openshift-infra
+
+Using project "myproject".
 ```
 
 The components that make up Istio run as specific service accounts on Kubernetes and OpenShift. When we install Istio in the next few steps, a new project with name `istio-system` will be created and a few service accounts are added to this project. Any new service accounts created on OpenShift are restricted by default. `Ingress` and `Egress` pods run as root. Hence we have to allow these service accounts to run as `anyuid`. 
@@ -86,7 +113,7 @@ In the same way, when we run supporting components `prometheus` and `grafana` fo
 $ oc adm policy add-scc-to-user anyuid -z default -n istio-system
 ```
 
-**Note:** This above workaround may change in the future. 
+**Note:** This above workaround may change in the future as they should run with separate service accounts that would have to be assigned priveleged access individually.
 
 Istio installer is available in two variants. 
 * `istio.yaml` without mutual TLS authentication between sidecars
@@ -277,7 +304,8 @@ istio-ingress   istio-ingress-istio-system.127.0.0.1.nip.io             istio-in
 ```
 Now the url [http://istio-ingress-istio-system.127.0.0.1.nip.io](istio-ingress-istio-system.127.0.0.1.nip.io) is my ingress point.
 
-You are now good to start running Istio examples.
+
+Istio is now up and running. Let's now install supporting infrastructure components for metrics, tracing and service graph.
 
 
 

@@ -1,4 +1,4 @@
-#Istio on Openshift
+# Istio on Openshift
 
 This write up covers my notes on running Istio on OpenShift. As I test with different implementations of OpenShift, I'll add additional links here.
 
@@ -8,3 +8,7 @@ This write up covers my notes on running Istio on OpenShift. As I test with diff
 * Deploying Istio with minishift
 * Deploying Istio with OpenShift Cluster
 
+## Infrastructure components on Istio
+* [Deploy infrastructure components for metrics and tracing](./InstallInfrastructureComponents.md)
+
+## Sample Application and Testing
