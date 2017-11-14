@@ -74,7 +74,7 @@ Check zipkin tracing now again. The last one shows in red to represent failure.
 ![ZipkinTraceWithRatings](./images/zipkin3.jpeg)
 ![ZipkinTraceWithRatings](./images/zipkin4.jpeg)
 
-The detailed trace shows that ratings service responded in ~7 seconds. But the reviews service failed in ~3 seconds and then it went for a retry. Even during the retry ratings responded after ~7 seconds and the reviews failed. This is because the timeout between the productpage and reviews service is less (3s + 1 retry = 6s total) than the timeout between the reviews and ratings service (10s)
+The detailed trace shows that ratings service responded in ~7 seconds. But the reviews service failed in ~3 seconds and then it went for a retry. Even during the retry ratings responded after ~7 seconds and the reviews failed. This is because the timeout between the productpage and reviews service is less (3s + 1 retry = 6s total) than the timeout between the reviews and ratings service (10s) as [hardcoded here](https://github.com/istio/istio/blob/master/samples/bookinfo/src/productpage/productpage.py#L231). 
 
 Sign-out from "Jason" and test as a default user, the calls should go through fine with no errors.
 

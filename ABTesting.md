@@ -99,5 +99,22 @@ $ for i in {1..100}; do curl http://istio-ingress-istio-system.127.0.0.1.nip.io/
 Notice that the traffic being split would be approximately equal between reviews v1 and v3 on the service graph as shown below. There wouldn't be any traffic to reviews v2. 
 ![](./images/servicegraph3.jpeg)
 
+**Clean up**
+
+Reset the default routing rules to redirect all traffic to  v1
+
+```
+$ oc replace -f samples/bookinfo/kube/route-rule-all-v1.yaml
+routerule "productpage-default" replaced
+routerule "reviews-default" replaced
+routerule "ratings-default" replaced
+routerule "details-default" replaced
+
+```
+Test to make sure your app is reaching all version 1 services.
+
+ 
+Now we are ready for the next lab.
+
 ### Summary
 In this lab we observed how we can shift traffic by using traffic rules. The example above was AB Testing. 
