@@ -16,6 +16,7 @@ This write up covers my notes on running Istio on OpenShift. As I test with diff
 For testing, you will run the same steps in [Istio Documentation](https://istio.io/docs/guides/intelligent-routing.html) except that you will replace `istioctl` with `oc`. As an example 
 instead of running `istioctl create -f samples/bookinfo/kube/route-rule-all-v1.yaml`, you will run `oc create -f samples/bookinfo/kube/route-rule-all-v1.yaml`
 
-* Testing Canary, Content based routing [Istio Docs](https://istio.io/docs/tasks/traffic-management/request-routing.html#content-based-routing) [openshift commands](./CanaryContentBasedRouting.md)
-* Fault Injection with Network Latency [Istio Docs](https://istio.io/docs/tasks/traffic-management/fault-injection.html) [openshift commands](./FaultInjection.md)
+* Testing Canary using Content based routing [Istio Docs](https://istio.io/docs/tasks/traffic-management/request-routing.html#content-based-routing)	[openshift commands](./CanaryContentBasedRouting.md)
+* Network Latency Fault Injection [Istio Docs](https://istio.io/docs/tasks/traffic-management/fault-injection.html)	[openshift commands](./FaultInjection.md)
+* Traffic Shaping using Routing Rules [Istio Docs](https://istio.io/docs/tasks/traffic-management/traffic-shifting.html)	[openshift commands](./ABTesting.md)
 * More tests to be added

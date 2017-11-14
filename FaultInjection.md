@@ -117,11 +117,26 @@ Test again signing in as user "jason". Black star ratings (reviews v2) should be
 
 **Cleanup content based route rules**
 
+To run the next lab you would want to clean up the content based rules 
+
+```
 $ oc delete routerule ratings-test-delay
 routerule "ratings-test-delay" deleted
 
 $ oc delete routerule reviews-test-v2
 routerule "reviews-test-v2" deleted
+```
+
+Only the default rules redirecting all traffic to v1 should be left
+
+```
+$ oc get routerule
+NAME                  KIND
+details-default       RouteRule.v1alpha2.config.istio.io
+productpage-default   RouteRule.v1alpha2.config.istio.io
+ratings-default       RouteRule.v1alpha2.config.istio.io
+reviews-default       RouteRule.v1alpha2.config.istio.io
+```
 
 ### Summary
 In this lab, we have learnt to inject a fault by mimicing network latency for a specific user and tested how the overall system behaves.
