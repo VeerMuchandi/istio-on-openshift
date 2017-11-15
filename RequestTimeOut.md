@@ -69,11 +69,13 @@ EOF
 Now if you test you will see that the there is a 2 sec wait for the response.
 Note the response time for ratings service in Zipkin. It would have gone up from milliseconds measured earlier to over 2 seconds now. But the call is still successful. 
 
+By default, the timeout for http requests is 15 seconds, but this can be overridden in a route rule. 
+
 
 Now let's add 1 sec timeout for the reviews service. 
 
 ```
-cat <<EOF | oc replace -f -
+$ cat <<EOF | oc replace -f -
 apiVersion: config.istio.io/v1alpha2
 kind: RouteRule
 metadata:
