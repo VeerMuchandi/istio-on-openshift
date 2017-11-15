@@ -19,9 +19,10 @@ As an example instead of running
 you will run 	
 `oc create -f samples/bookinfo/kube/route-rule-all-v1.yaml`
 
-* Testing Canary using Content based routing [Istio Docs](https://istio.io/docs/tasks/traffic-management/request-routing.html#content-based-routing)	[OpenShift Lab](./CanaryContentBasedRouting.md)
-* Network Latency Fault Injection [Istio Docs](https://istio.io/docs/tasks/traffic-management/fault-injection.html)	[OpenShift Lab](./FaultInjection.md)
-* Traffic Shaping using Routing Rules [Istio Docs](https://istio.io/docs/tasks/traffic-management/traffic-shifting.html)	[OpenShift Lab](./ABTesting.md)
-* Request Timeouts [Istio Docs](https://istio.io/docs/tasks/traffic-management/request-timeouts.html)		[OpenShift Lab](./RequestTimeOut.md)
-* Rules Precedence [Istio Docs](https://istio.io/docs/concepts/traffic-management/rules-configuration.html#rules-have-precedence)	[OpenShift Lab](./RulesPrecedence.md)
+* [Canary using Content based routing](./CanaryContentBasedRouting.md)  [Istio Docs](https://istio.io/docs/tasks/traffic-management/request-routing.html#content-based-routing)	
+* [Network Latency Fault Injection](./FaultInjection.md)     [Istio Docs](https://istio.io/docs/tasks/traffic-management/fault-injection.html)
+* [Traffic Shaping using Routing Rules](./ABTesting.md)     [Istio Docs](https://istio.io/docs/tasks/traffic-management/traffic-shifting.html)
+* [Request Timeouts](./RequestTimeOut.md)      [Istio Docs](https://istio.io/docs/tasks/traffic-management/request-timeouts.html)
+* [Rules Precedence](./RulesPrecedence.md)     [Istio Docs](https://istio.io/docs/concepts/traffic-management/rules-configuration.html#rules-have-precedence)
+* [Applying Rate Limits](./ApplyingRateLimits.md)   [Istio Docs](https://istio.io/docs/tasks/policy-enforcement/rate-limiting.html)
 * More tests to be added
