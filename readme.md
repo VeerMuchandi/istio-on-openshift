@@ -4,11 +4,9 @@ This write up covers my notes on running Istio on OpenShift. As I test with diff
 
 ## Deploying Istio
 
-* [Deploying Istio with `oc cluster up`](./DeployingIstioWithOcclusterup.md)
+* [Deploying Istio with minishift](./DeployingIstioWithMinishift.md)
 * Deploying Istio on OpenShift Cluster - Under Construction
 
-## Infrastructure components on Istio
-* [Deploy infrastructure components for metrics and tracing](./InstallInfrastructureComponents.md)
 
 ## Sample Application and Testing
 * [Deploy Sample BookInfo Application](./DeployingSampleApplication.md)

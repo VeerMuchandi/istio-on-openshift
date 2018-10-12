@@ -3,7 +3,7 @@
 This chapter explains deploying Istio with Minishift. This documentation is written for **minishift v1.25** with **openshift version 1.10**.
 
 
-**Prerequisites:**
+###Prerequisites
 
 * [Minishift v1.25](https://docs.okd.io/latest/minishift/getting-started/installing.html) installed on your box. I have tested this with the following version of minishift running on my box
 
@@ -101,7 +101,11 @@ As the output suggested let us watch the status of istio-system by running
 ```
 oc get pods -w -n istio-system --as system:admin
 ```
-This addon invokes an installer pod `openshift-ansible-istio-installer-job-xxxx` which installs istio on openshift and completes. This will take a few minutes. You should see the istio pods initializing until you see the final state as
+This addon invokes an installer pod `openshift-ansible-istio-installer-job-xxxx` which installs istio on openshift and completes. 
+> **Note** By default, OpenShift doesn’t allow containers running with user ID 0 ie root. Currently all the Istio containers run as root. Installer enables containers running with UID 0 for Istio’s service accounts and the supporting service accounts such as prometheus, grafana etc. 
+> Also, a service account that runs application pods needs privileged security context constraints as part of sidecar injection. We will deal with this when we are installing a sample application. 
+
+This will take a few minutes. You should see the istio pods initializing until you see the final state as
 
 ```
 NAME                                          READY     STATUS      RESTARTS   AGE
@@ -127,41 +131,6 @@ prometheus-84bd4b9796-kgc9z                   1/1       Running     0          7
 
 Now you have an OpenShift cluster running on your box along with openshift istio framework. The openshift istio framework also includes monitoring using `prometheus` and `grafana`, request tracing using `jaeger`, visualization using `kiali` in addition to the key istio components such as `pilot`, `mixer`, `sidecar-injector`, and `citadel`.
 
-
-### Download Istio Samples
-
-While we are already running Istio on minishift now, let us do some extra steps to get the samples and istio cli downloaded to our box. 
-
-You can download Istio binaries and samples corresponding to your OS from here [https://github.com/istio/istio/releases](https://github.com/istio/istio/releases) 
-
-If you are using Mac or Linux you can run the following command that will extract the latest release automatically
-
-```
-curl -L https://git.io/getLatestIstio | sh -
-```
-
-I am testing with Istio version `1.0.2`. 
-
-```
-cd istio-1.0.2
-```
-
-Set the path to `istioctl` binary or copy to a location where it can run. As an example on Mac, I am copying istioctl to `/usr/local/bin` so that I can run this command. Verify running `istioctl version`.
-
-```
-$ cp bin/istioctl /usr/local/bin
-
-$ which istioctl
-/usr/local/bin/istioctl
-
-$ istioctl version
-Version: 1.0.2
-GitRevision: d639408fded355fb906ef2a1f9e8ffddc24c3d64
-User: root@66ce69d4a51e
-Hub: gcr.io/istio-release
-GolangVersion: go1.10.1
-BuildStatus: Clean
-```
 
 ### Verify Istio
 
@@ -356,6 +325,43 @@ Now the url [istio-ingressgateway-istio-system.192.168.64.72.nip.io](istio-ingre
 
 
 Istio is now up and running.
+
+
+### Download Istio Samples
+
+While we are already running Istio on minishift now, let us do some extra steps to get the samples and istio cli downloaded to our box. 
+
+You can download Istio binaries and samples corresponding to your OS from here [https://github.com/istio/istio/releases](https://github.com/istio/istio/releases) 
+
+If you are using Mac or Linux you can run the following command that will extract the latest release automatically
+
+```
+curl -L https://git.io/getLatestIstio | sh -
+```
+
+I am testing with Istio version `1.0.2`. 
+
+```
+cd istio-1.0.2
+```
+
+Set the path to `istioctl` binary or copy to a location where it can run. As an example on Mac, I am copying istioctl to `/usr/local/bin` so that I can run this command. Verify running `istioctl version`.
+
+```
+$ cp bin/istioctl /usr/local/bin
+
+$ which istioctl
+/usr/local/bin/istioctl
+
+$ istioctl version
+Version: 1.0.2
+GitRevision: d639408fded355fb906ef2a1f9e8ffddc24c3d64
+User: root@66ce69d4a51e
+Hub: gcr.io/istio-release
+GolangVersion: go1.10.1
+BuildStatus: Clean
+```
+
 
 
 
