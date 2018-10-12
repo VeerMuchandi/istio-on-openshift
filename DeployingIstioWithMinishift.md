@@ -102,6 +102,15 @@ As the output suggested let us watch the status of istio-system by running
 oc get pods -w -n istio-system --as system:admin
 ```
 This addon invokes an installer pod `openshift-ansible-istio-installer-job-xxxx` which installs istio on openshift and completes. 
+
+```
+$ oc get pods -w -n istio-system --as system:admin
+NAME                                          READY     STATUS    RESTARTS   AGE
+openshift-ansible-istio-installer-job-thwkz   0/1       Pending   0          10s
+openshift-ansible-istio-installer-job-thwkz   0/1       Pending   0         10s
+openshift-ansible-istio-installer-job-thwkz   0/1       ContainerCreating   0         10s
+```
+
 > **Note** By default, OpenShift doesn’t allow containers running with user ID 0 ie root. Currently all the Istio containers run as root. Installer enables containers running with UID 0 for Istio’s service accounts and the supporting service accounts such as prometheus, grafana etc. 
 > Also, a service account that runs application pods needs privileged security context constraints as part of sidecar injection. We will deal with this when we are installing a sample application. 
 
