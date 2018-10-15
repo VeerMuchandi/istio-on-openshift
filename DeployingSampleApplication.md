@@ -56,7 +56,7 @@ as shown here. You will find this in the individual `deployment` artifacts.
 These application pods current run as `default` service account in a project. Hence we have to provide `privileged` access to the `default` account. Eventually, these examples should change to not require privileged access. But in the meanwhile, here is how you can set `default` service account to `privileged` security context constraint (scc) in the `bookinfo` project/namespace.
 
 ```
-$ oc adm policy add-scc-to-user privileged -z default -n bookinfo
+oc adm policy add-scc-to-user privileged -z default -n bookinfo
 ```
 
 Let's now deploy the `bookinfo` application. We are using `istioctl kube-inject` to add `Envoy` sidecar proxies to each of the kubernetes deployment yamls and using the resultant deployment yamls to create an application.
@@ -65,6 +65,7 @@ Let's now deploy the `bookinfo` application. We are using `istioctl kube-inject`
 kubectl apply -f <(istioctl kube-inject -f samples/bookinfo/platform/kube/bookinfo.yaml)
 ```
 and watch the output as shown below
+
 ```
 service/details created
 deployment.extensions/details-v1 created
@@ -201,9 +202,39 @@ istio-ingressgateway   istio-ingressgateway-istio-system.192.168.64.72.nip.io   
 
 So I can access the product page at the URL [http://istio-ingressgateway-istio-system.192.168.64.72.nip.io/productpage](http://istio-ingressgateway-istio-system.192.168.64.72.nip.io/productpage). *Use your own URL*
 
-Familiarize with this application a little bit. Use it a few times. Go back and check the service graph on kiali at [https://kiali-istio-system.192.168.64.72.nip.io](https://kiali-istio-system.192.168.64.72.nip.io)
-You will see that the graph as below: *Use your own URL*
-![servicegraph](./images/kialiServiceGraph.jpeg)
+Familiarize with this application a little bit. Use it a few times. 
+
+### Service Graph
+
+Check the service graph on kiali at [https://kiali-istio-system.192.168.64.72.nip.io](https://kiali-istio-system.192.168.64.72.nip.io)
+You can use the `Graph` menu item on the left of Kiala to view this graph as below: *Use your own URL*
+![kiaiservicegraph](./images/kialiServiceGraph.jpeg)
+
+Right next to the service graph, you will see a summary of the traffic success and error rates which gives you a snapshot of the health of your microservices running on the platform
+
+### Application Metrics
+
+Click on the `Applications` menu to get an application centric view of different microservices, their health/error rate and their inbound and outbound metrics such as `Request Volume`, `Request Duration`, `Request Size`, `Response Size` etc.
+These are helpful for debugging your microservices as you use them further.
+
+You'll get similar information using `Workloads` menu item, where the viewpoint is based on kubernetes deployments rather than applications.
+
+Yet another view is provided based on Kubernetes Services with the `Services` menu item.
+
+### Tracing
+
+Click on `Distributed Tracing	` on the Kiali menu to connect to Jaeger. 
+
+> **Note** If you are not getting redirected to Jaeger, you may have to enable popups from Kiali page
+
+Jaeger provides tracing info for all the calls you made. Select a service on the left hand menu such as `istio-ingressgateway` or `productpage` and you will see the list of traces for all your usage.
+
+![JaegerTracing](./images/bookinfo_jaeger_1.png)
+
+You can compare these traces by selecting a few of them, or you can select a particular trace by clicking on one of them and look at the response times as shown below.
+
+![JaegerTracing](./images/bookinfo_jaeger_2.png)
+
 
 Also notice the data collected by Prometheus and displayed on Grafana at [http://grafana-istio-system.192.168.64.72.nip.io/d/LJ_uJAvmk/istio-service-dashboard](http://grafana-istio-system.192.168.64.72.nip.io/d/LJ_uJAvmk/istio-service-dashboard) *Use your own URL*
 
