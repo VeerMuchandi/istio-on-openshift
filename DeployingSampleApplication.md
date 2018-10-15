@@ -108,6 +108,10 @@ virtualservice.networking.istio.io/bookinfo created
 ```
 This creates a gateway and a virtual service.
 
+* A [Gateway](https://istio.io/docs/reference/config/istio.networking.v1alpha3/#Gateway) configures a load balancer for HTTP/TCP traffic, most commonly operating at the edge of the mesh to enable ingress traffic for an application.
+
+* A [VirtualService](https://istio.io/docs/reference/config/istio.networking.v1alpha3/#VirtualService) defines the rules that control how requests for a service are routed within an Istio service mesh
+
 The gateway will direct all the `HTTP` traffic coming on port `80` at istio-ingressgateway to the bookinfo sample application
 
 ```
@@ -200,7 +204,12 @@ istio-ingressgateway   istio-ingressgateway-istio-system.192.168.64.72.nip.io   
 
 > **Note** Your URLs would be different from mine. So use your values. If you want  to know your URLs run `kubectl get route -n istio-system`
 
-So I can access the product page at the URL [http://istio-ingressgateway-istio-system.192.168.64.72.nip.io/productpage](http://istio-ingressgateway-istio-system.192.168.64.72.nip.io/productpage). *Use your own URL*
+Save this URL as an environment variable
+
+```
+export URL=$(kubectl get route istio-ingressgateway -n istio-system -o yaml -o jsonpath={.spec.host})
+```
+So I can access the product page at the URL [http://${URL}/productpage](http://${URL}/productpage). 
 
 Familiarize with this application a little bit. Use it a few times. 
 
@@ -244,7 +253,11 @@ Also notice the data collected by Prometheus and displayed on Grafana at [http:/
 
 ### Destination Rules
 
-We have the Bookinfo application running now. Let's apply some destination rules  from the file `samples/bookinfo/networking/destination-rule-all-mtls.yaml` that will allow us to shape traffic according to the subsets we define in these rules. Let us first look at these destination rules. These are four rules applies to **productpage**, **reviews**, **ratings** and **details**. The rules define subsets based on the *version* labels. These subsets will be used in the future labs for traffic shaping. 
+We have the Bookinfo application running now. Let's apply some destination rules  from the file `samples/bookinfo/networking/destination-rule-all-mtls.yaml` that will allow us to shape traffic according to the subsets we define in these rules. 
+
+A [DestinationRule](https://istio.io/docs/reference/config/istio.networking.v1alpha3/#DestinationRule) configures the set of policies to be applied to a request after VirtualService routing has occurred.
+
+Let us first look at these destination rules. These are four rules applies to **productpage**, **reviews**, **ratings** and **details**. The rules define subsets based on the *version* labels. These subsets will be used in the future labs for traffic shaping. 
 
 ```
 $ cat samples/bookinfo/networking/destination-rule-all-mtls.yaml
