@@ -236,10 +236,130 @@ You can compare these traces by selecting a few of them, or you can select a par
 ![JaegerTracing](./images/bookinfo_jaeger_2.png)
 
 
+### Monitoring
+
 Also notice the data collected by Prometheus and displayed on Grafana at [http://grafana-istio-system.192.168.64.72.nip.io/d/LJ_uJAvmk/istio-service-dashboard](http://grafana-istio-system.192.168.64.72.nip.io/d/LJ_uJAvmk/istio-service-dashboard) *Use your own URL*
 
 
-We have application running now. It is now time to test the awesomeness of Istio.
+
+### Destination Rules
+
+We have the Bookinfo application running now. Let's apply some destination rules  from the file `samples/bookinfo/networking/destination-rule-all-mtls.yaml` that will allow us to shape traffic according to the subsets we define in these rules. Let us first look at these destination rules. These are four rules applies to **productpage**, **reviews**, **ratings** and **details**. The rules define subsets based on the *version* labels. These subsets will be used in the future labs for traffic shaping. 
+
+```
+$ cat samples/bookinfo/networking/destination-rule-all-mtls.yaml
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: productpage
+spec:
+  host: productpage
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: reviews
+spec:
+  host: reviews
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+  - name: v2
+    labels:
+      version: v2
+  - name: v3
+    labels:
+      version: v3
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: ratings
+spec:
+  host: ratings
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+  - name: v2
+    labels:
+      version: v2
+  - name: v2-mysql
+    labels:
+      version: v2-mysql
+  - name: v2-mysql-vm
+    labels:
+      version: v2-mysql-vm
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: details
+spec:
+  host: details
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+  - name: v2
+    labels:
+      version: v2
+---
+
+```
+
+Let us now apply these labels by running
+
+```
+kubectl apply -f samples/bookinfo/networking/destination-rule-all-mtls.yaml
+```
+
+Get back to Kiala menu option `Istio Config` on the left to find these destination rules. **Istio Config** can be used to view all the rules applied on the traffic at any point of time.
+
+
+### Clean Up
+
+> **Note** If you are proceeding with other labs, you don't run clean up. Just move ahead with the next lab.
+
+In order to remove the BookInfo application deployed so far, run the following commands.
+
+```
+samples/bookinfo/platform/kube/cleanup.sh
+```
+
+or you can clean up the objects individually by running the following
+
+```
+kubectl -n bookinfo delete virtualservices --all 	# deletes all virtual services
+kubectl -n bookinfo delete destinationrules --all 	# delete all destination rules
+kubectl -n bookinfo delete gateway --all 	# deletes all gateways
+kubectl -n bookinfo delete -f samples/bookinfo/platform/kube/bookinfo.yaml 	# deletes all services and deployments
+kubectl -n bookinfo delete rs --all 			# deletes all replica sets
+kubectl -n bookinfo delete pods --all 		# deletes all pods
+```
+
+
+### Summary
+
+In this chapter, we have deployed our sample Bookinfo application and tested that it is running. We also looked at how to monitor and trace this application using Istio's supported services
+
 
 
 
