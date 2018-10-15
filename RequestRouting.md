@@ -1,5 +1,11 @@
 # Request Routing
 
+### Prerequisites
+
+* A running Istio Cluster
+* Sample BookInfo Application deployed
+* Destination rules created
+
 ## Routing all traffic to version 1
 If you test the Bookinfo application in the browser. "Reviews" output is random each time you access the page.
 
@@ -172,6 +178,8 @@ Assume you created a new version of reviews service v2 and you want to test it a
 
 
 ### Cleanup
+
+> **Note** If you want to continue to the next lab, this clean up is not required. 
 
 To clean up all the virtual services we added, remove them using the following command
 

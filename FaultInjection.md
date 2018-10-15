@@ -5,138 +5,168 @@ In this example, we will observe what happens when we add some delay to mimic ne
 
 ### Pre-requisites
 
-This is a followup after the [canary test](./CanaryContentBasedRouting.md). So if you haven't executed the canary test, you would want to include the default routing rules listed there.
+* A running Istio Cluster
+* Sample BookInfo application deployed
+* This is a followup after the [Request Routing Example](./RequestRouting.md). So if you haven't executed the test, you would want to 
+	* create virtual services that would default to v1 i.e, `kubectl apply -f samples/bookinfo/networking/virtual-service-all-v1.yaml` 
+	* content based routing for user jason to be redirected to v2 i.e, `kubectl apply -f samples/bookinfo/networking/virtual-service-reviews-test-v2.yaml` 
+	 
 
-Also sign-out from being the user "Jason"
+
+## Verify the response times with No delay
+
+Run the application a few times from the browser as user `jason`. You will notice in the Jaeager tracer, that the response time for the service is a few milliseconds 
+
+![JaegerTrace](./images/Jaeger_tracing_fault1.png)
 
 
-### Exercise
+## Inject Delay
 
-Test the application in the browser and observe the response times in zipkin. In order to find the URL for zipkin run
-
-```
-$ oc get route zipkin -n istio-system 
-NAME      HOST/PORT                                 PATH      SERVICES   PORT      TERMINATION   WILDCARD
-zipkin    zipkin-istio-system.192.168.64.7.nip.io             zipkin     http                    None
-```
-In my case zipkin url is `zipkin-istio-system.192.168.64.7.nip.io`. Use that and find the response time for the latest usage. You will notice that the response time for the service is a few milliseconds. You can click and expand the trace and you will find the time consumed by individual services as shown here
-
-![ZipkinTrace](./images/zipkin1.jpeg)
-
-Now login as user "Jason" and use the system and measure again. Click on the latest trace to expand. You'll find in the trace that the request goes from reviews service to ratings service. But the ratings service would just take a few milliseconds to respond. 
-
-![ZipkinTraceWithRatings](./images/zipkin2.jpeg)
-
-Now let's introduce some delay on the ratings service specifically for user "Jason". This rule introduces a fixed delay of 7 seconds on the ratings service for any traffic coming from Jason. If you see the rule, you will understand that we are introducing this delay using `httpFault`.
-
+Now let's introduce some delay on the ratings service specifically for user "Jason". This rule introduces a fixed delay of 7 seconds on the ratings service for any traffic coming from Jason. You will understand that we are introducing this delay using `httpFault`.
 
 ```
-$ oc create -f samples/bookinfo/kube/route-rule-ratings-test-delay.yaml
-routerule "ratings-test-delay" created
-
-$ oc get routerule ratings-test-delay -o yaml
-apiVersion: config.istio.io/v1alpha2
-kind: RouteRule
+$ cat samples/bookinfo/networking/virtual-service-ratings-test-delay.yaml
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
 metadata:
-  clusterName: ""
-  creationTimestamp: 2017-10-27T21:41:04Z
-  deletionGracePeriodSeconds: null
-  deletionTimestamp: null
-  name: ratings-test-delay
-  namespace: bookinfo
-  resourceVersion: "7746"
-  selfLink: /apis/config.istio.io/v1alpha2/namespaces/bookinfo/routerules/ratings-test-delay
-  uid: 886157b9-bb5f-11e7-9c32-1ad90b5af171
+  name: ratings
 spec:
-  destination:
-    name: ratings
-  httpFault:
-    delay:
-      fixedDelay: 7s
-      percent: 100
-  match:
-    request:
-      headers:
-        cookie:
-          regex: ^(.*?;)?(user=jason)(;.*)?$
-  precedence: 2
-  route:
-  - labels:
-      version: v1
+  hosts:
+  - ratings
+  http:
+  - match:
+    - headers:
+        end-user:
+          exact: jason
+    fault:
+      delay:
+        percent: 100
+        fixedDelay: 7s
+    route:
+    - destination:
+        host: ratings
+        subset: v1
+  - route:
+    - destination:
+        host: ratings
+        subset: v1
 ```
 
+Apply the delay by running
+
+```
+kubectl apply -f samples/bookinfo/networking/virtual-service-ratings-test-delay.yaml
+```
+and watch the virtual service for ratings updated
+
+```
+virtualservice.networking.istio.io/ratings configured
+```
 
 Now try accessing the application. The reviews part of the application fails with error "**Error Fetching Product Reviews**" as below:
 ![FaultIntroduced](./images/FaultWith10SDelay.jpeg)
 
-Check zipkin tracing now again. The last one shows in red to represent failure.
+Check Jaeger tracing now again to check the failures.
 
-![ZipkinTraceWithRatings](./images/zipkin3.jpeg)
-![ZipkinTraceWithRatings](./images/zipkin4.jpeg)
+![JaegerTraceWithRatings](./images/Jaeger_tracing_fault2.png)
+
 
 The detailed trace shows that ratings service responded in ~7 seconds. But the reviews service failed in ~3 seconds and then it went for a retry. Even during the retry ratings responded after ~7 seconds and the reviews failed. This is because the timeout between the productpage and reviews service is less (3s + 1 retry = 6s total) than the timeout between the reviews and ratings service (10s) as [hardcoded here](https://github.com/istio/istio/blob/master/samples/bookinfo/src/productpage/productpage.py#L231). 
 
 Sign-out from "Jason" and test as a default user, the calls should go through fine with no errors.
 
 
-**Edit the delay**
+### Edit Delay
 
 Let's now edit the delay to 2.8 seconds on the ratings service to see
 
 ```
-$ oc edit routerule ratings-test-delay
+$ kubectl edit virtualservice ratings
 ```
 
 Find this section in the editor
 ```
 spec:
-  destination:
-    name: ratings
-  httpFault:
-    delay:
-      fixedDelay: 7s
-      percent: 100
+  hosts:
+  - ratings
+  http:
+  - fault:
+      delay:
+        fixedDelay: 7s
+        percent: 100
 ```
 
 Change it to 
 
 ```
 spec:
-  destination:
-    name: ratings
-  httpFault:
-    delay:
-      fixedDelay: 2.8s
-      percent: 100
+  hosts:
+  - ratings
+  http:
+  - fault:
+      delay:
+        fixedDelay: 2.8s
+        percent: 100
       
 ```
 and save.
 
-Test again signing in as user "jason". Black star ratings (reviews v2) should be back again. But you will notice a slight wait of <3 seconds. Also observe Zipkin traces to find that the ratings service uses ~2.8 seconds and the rest of the calls go through with no errors.
+Test again signing in as user "jason". Black star ratings (reviews v2) should be back again. But you will notice a slight wait of <3 seconds. Also observe Jaeger traces to find that the ratings service uses ~2.8 seconds and the rest of the calls go through with no errors.
 
+## Inject HTTP Abort Fault
 
-**Cleanup content based route rules**
+We'll now introduce a HTTP Abort Fault to the `ratings` service for user `jason`.
 
-To run the next lab you would want to clean up the content based rules 
-
-```
-$ oc delete routerule ratings-test-delay
-routerule "ratings-test-delay" deleted
-
-$ oc delete routerule reviews-test-v2
-routerule "reviews-test-v2" deleted
-```
-
-Only the default rules redirecting all traffic to v1 should be left
+Let us look at the fault we are adding. The following rule throws `httpStatus 500` for the ratings service when the user is `jason`.
 
 ```
-$ oc get routerule
-NAME                  KIND
-details-default       RouteRule.v1alpha2.config.istio.io
-productpage-default   RouteRule.v1alpha2.config.istio.io
-ratings-default       RouteRule.v1alpha2.config.istio.io
-reviews-default       RouteRule.v1alpha2.config.istio.io
+$ cat samples/bookinfo/networking/virtual-service-ratings-test-abort.yaml
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: ratings
+spec:
+  hosts:
+  - ratings
+  http:
+  - match:
+    - headers:
+        end-user:
+          exact: jason
+    fault:
+      abort:
+        percent: 100
+        httpStatus: 500
+    route:
+    - destination:
+        host: ratings
+        subset: v1
+  - route:
+    - destination:
+        host: ratings
+        subset: v1
 ```
 
+Apply this fault by running
+
+```
+kubectl apply -f samples/bookinfo/networking/virtual-service-ratings-test-abort.yaml
+```
+
+Test the application as a regular user. The output should show output with ratings not displaying any stars.
+
+Now signin as user `jason` and run again. You will see a message that *`Ratings service is currently unavailable`*
+
+You can also notice errors in Jaeger for the ratings service. Also note the service graph showing errors between `reviews` and `ratings` in red as shown below.
+
+![Ratings Http Fault](./images/kiali_ratings_fault.png)
+
+## Clean up
+
+To clean up, remove the routing rules by deleting the virtual services created earlier.
+
+```
+kubectl delete -f samples/bookinfo/networking/virtual-service-all-v1.yaml
+```
 ### Summary
-In this lab, we have learnt to inject a fault by mimicing network latency for a specific user and tested how the overall system behaves.
+In this lab, we have learnt to inject a fault by mimicing network latency and a http fault for a specific user and tested how the overall system behaves.
