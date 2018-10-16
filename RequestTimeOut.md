@@ -4,8 +4,10 @@ In this exercise we will learn to to introduce timeouts using Routing rules.
 
 
 ### Pre-requisites
+
 * A running Istio Cluster
-* Sample BookInfo application deployed 
+* Sample BookInfo Application deployed
+* Destination rules created
 * Create virtual services that would default to v1 i.e, `kubectl apply -f samples/bookinfo/networking/virtual-service-all-v1.yaml` 
 
 ## Add Request Time Out

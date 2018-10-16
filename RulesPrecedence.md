@@ -1,98 +1,130 @@
 # Rules Precedence
-In this exercise we will see how the precedence of rules varies the behavior of application of rules on Istio.
+In this exercise we will see how the precedence of rules varies the behavior of application of rules on Istio. When there are multiple rules for a given destination, they are evaluated in the order they appear in the VirtualService, meaning the first rule in the list has the highest priority.
 
 ### Pre-requisites
-You want all the traffic being directed to v1 services. If the system state is inconsistent delete all the route rules and create them again 
+* A running Istio Cluster
+* Sample BookInfo Application deployed
+* Destination rules created
+* Create virtual services that would default to v1 i.e, `kubectl apply -f samples/bookinfo/networking/virtual-service-all-v1.yaml`
+
+## Understanding Precedence
+
+If you test the application now, all the traffic will be flowing to reviews version v1 ie., you will see **no stars**
+
+
+Let us now apply the rule to direct the traffic for user `jason` to reviews v3
+as in [Request Routing and Identity Based Routing](./RequestRouting.md) with some minor modifications. The changes here are to apply the routing rule to v1 before matching the user `jason`.
 
 ```
-$ oc delete routerule --all
-routerule "details-default" deleted
-routerule "productpage-default" deleted
-routerule "ratings-default" deleted
-routerule "reviews-default" deleted
-
-$ oc create -f samples/bookinfo/kube/route-rule-all-v1.yaml
-routerule "productpage-default" created
-routerule "reviews-default" created
-routerule "ratings-default" created
-routerule "details-default" created
+  - route:
+    - destination:
+        host: reviews
+        subset: v1
+  - match:
+    - headers:
+        end-user:
+          exact: jason
+    route:
+    - destination:
+        host: reviews
+        subset: v2
 ```
-### Exercise
 
-Let's first update the reviews service to redirect all the traffic to version 3. But this time we will also give it a precedence of 3.
+Let us apply the rule.
 
 ```
-$ cat <<EOF | oc replace -f -
-apiVersion: config.istio.io/v1alpha2
-kind: RouteRule
+cat <<EOF | kubectl apply -f -
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
 metadata:
-  name: reviews-default
+  name: reviews
 spec:
-  destination:
-    name: reviews
-  precedence: 3
-  route:
-  - labels:
-      version: v3
+  hosts:
+    - reviews
+  http:
+  - route:
+    - destination:
+        host: reviews
+        subset: v1
+  - match:
+    - headers:
+        end-user:
+          exact: jason
+    route:
+    - destination:
+        host: reviews
+        subset: v2
 EOF
-```
-
-If you go and test the application, you will see reviews version 3 i.e, all **red** starts for ratings.
-
-
-Now just like in content based routing lab we will redirect any traffic coming from user "jason" to reviews version v3. Let's quickly look at the routing rule first.
 
 ```
-$ cat samples/bookinfo/kube/route-rule-reviews-test-v2.yaml
-apiVersion: config.istio.io/v1alpha2
-kind: RouteRule
+
+Now test the application without logging in as user `jason` first and then by logging in as user `jason`. In both cases, you will see a result with **no stars**.
+
+**Why?**
+ When there are multiple rules for a given destination, they are evaluated in the order they appear in the VirtualService, meaning the first rule in the list has the highest priority.
+ 
+So if you want to evaluate the user `jason` and apply that user specific rule before falling over to the default, the order should be different as below.
+
+```
+
+  - match:
+    - headers:
+        end-user:
+          exact: jason
+    route:
+    - destination:
+        host: reviews
+        subset: v2
+  - route:
+    - destination:
+        host: reviews
+        subset: v1
+
+```
+
+
+Now let us correct the precedence and apply again
+
+```
+cat <<EOF | kubectl apply -f -
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
 metadata:
-  name: reviews-test-v2
+  name: reviews
 spec:
-  destination:
-    name: reviews
-  precedence: 2
-  match:
-    request:
-      headers:
-        cookie:
-          regex: "^(.*?;)?(user=jason)(;.*)?$"
-  route:
-  - labels:
-      version: v2
-```
-
-Note that there is a precedence of 2 for this rule. Let's apply this rule.
-
-```
-$ oc create -f samples/bookinfo/kube/route-rule-reviews-test-v2.yaml
-routerule "reviews-test-v2" created
-```
-Now test the application by logging in as user "jason". You will still see reviews version 3 (**red** stars). **WHY?**
-
-The `precedence` of the routing rules matters. The higher the value of precedence, that rule takes higher precedence. In our case, the `reviews-default` rule has a precedence of 3 whereas the content based rule for user "jason", `reviews-test-v2`, has a precedence of 2. So, even though the rule for "jason" exists, it is never touched due to lower precedence.
-
-Let us lower the precedence for the `reviews-default` rule as follows:
-
-```
-$ cat <<EOF | oc replace -f -
-apiVersion: config.istio.io/v1alpha2
-kind: RouteRule
-metadata:
-  name: reviews-default
-spec:
-  destination:
-    name: reviews
-  precedence: 1
-  route:
-  - labels:
-      version: v3
+  hosts:
+    - reviews
+  http:
+  - match:
+    - headers:
+        end-user:
+          exact: jason
+    route:
+    - destination:
+        host: reviews
+        subset: v2
+  - route:
+    - destination:
+        host: reviews
+        subset: v1
 EOF
+
+```
+Once you apply the corrected precedence and test again you will observe
+
+* when you are logged in as user `jason` you will see **black stars**
+* when you are log out you will see **no stars**
+
+## Cleanup 
+
+To clean up, remove the routing rules by deleting the virtual services created earlier.
+
+```
+kubectl delete -f samples/bookinfo/networking/virtual-service-all-v1.yaml
 ```
 
-If you test the application now, the traffic for user "Jason" hits reviews version 2 (displaying **black** stars for ratings) whereas all other traffic hits version 3 (displaying **red** starts for ratings).
+## Summary
 
-### Summary
 In this exercise we have tested the application of routing rules based on their precedence.
 
 
