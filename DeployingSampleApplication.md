@@ -4,6 +4,13 @@
 
 * Istio is installed and running 
 * Istio samples and tools are also available on your desktop
+* Your CLI is changed to the folder where Istio samples are downloaded i.e, when you list the files you should see this
+
+```
+$ ls
+LICENSE		bin		istio.VERSION	tools
+README.md	install		samples
+```
 
 ### Install Bookinfo sample application
 
@@ -64,6 +71,8 @@ Let's now deploy the `bookinfo` application. We are using `istioctl kube-inject`
 ```
 kubectl apply -f <(istioctl kube-inject -f samples/bookinfo/platform/kube/bookinfo.yaml)
 ```
+> **Note** you are in the folder where you downloaded Istio samples.
+
 and watch the output as shown below
 
 ```
@@ -371,7 +380,12 @@ kubectl -n bookinfo delete pods --all 		# deletes all pods
 
 ### Summary
 
-In this chapter, we have deployed our sample Bookinfo application and tested that it is running. We also looked at how to monitor and trace this application using Istio's supported services
+In this chapter
+
+* We have deployed our sample Bookinfo application and tested it
+* Created a gateway to reach the application
+* Added destination rules to set up routing rules later
+* We also looked at how to monitor and trace this application using Istio's supported services
 
 
 

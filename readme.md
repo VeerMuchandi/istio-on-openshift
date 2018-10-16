@@ -17,8 +17,8 @@ This write up covers my notes on running Istio on OpenShift. As I test with diff
 ## Traffic Management
 * [Request Routing and Identity Based Routing](./RequestRouting.md)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;   [Istio_Documentation](https://istio.io/docs/tasks/traffic-management/request-routing/)	
 * [Fault Injections - Latency and Abort](./FaultInjection.md)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;     [Istio_Documentation](https://istio.io/docs/tasks/traffic-management/fault-injection.html)
-* [Traffic Shaping using Routing Rules](./ABTesting.md)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;     [Istio_Documentation](https://istio.io/docs/tasks/traffic-management/traffic-shifting.html)
-* [Request Timeouts](./RequestTimeOut.md)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;      [Istio_Documentation](https://istio.io/docs/tasks/traffic-management/request-timeouts.html)
+* [Traffic Shifting - AB Testing](./ABTesting.md)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;     [Istio_Documentation](https://istio.io/docs/tasks/traffic-management/traffic-shifting/)
+* [Request Timeouts](./RequestTimeOut.md)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;      [Istio_Documentation](https://istio.io/docs/tasks/traffic-management/request-timeouts)
 * [Rules Precedence](./RulesPrecedence.md)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;     [Istio_Documentation](https://istio.io/docs/concepts/traffic-management/rules-configuration.html#rules-have-precedence)
 * [Applying Rate Limits](./ApplyingRateLimits.md)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;   [Istio_Documentation](https://istio.io/docs/tasks/policy-enforcement/rate-limiting.html)
 * More tests to be added
