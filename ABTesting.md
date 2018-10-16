@@ -5,8 +5,8 @@ In this lab, we will learn to shift specific amount of traffic to specific versi
 ### Pre-Requisites
 
 * A running Istio Cluster
-* Sample BookInfo application deployed
-
+* Sample BookInfo Application deployed
+* Destination rules created
 
 ## Traffic to V1
 

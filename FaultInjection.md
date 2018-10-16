@@ -168,5 +168,5 @@ To clean up, remove the routing rules by deleting the virtual services created e
 ```
 kubectl delete -f samples/bookinfo/networking/virtual-service-all-v1.yaml
 ```
-### Summary
+## Summary
 In this lab, we have learnt to inject a fault by mimicing network latency and a http fault for a specific user and tested how the overall system behaves.
