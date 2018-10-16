@@ -8,7 +8,7 @@ This write up covers my notes on running Istio on OpenShift. As I test with diff
 * Deploying Istio on OpenShift Cluster - Under Construction
 
 ## Supporting Services
-* [Understanding Supporting Services](./usingIstioSupportingServices.md)
+* [Understanding Supporting Services](./UsingIstioSupportingServices.md)
 
 
 ## Sample Application 
