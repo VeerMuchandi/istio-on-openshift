@@ -1,0 +1,20 @@
+apiVersion: "istio.openshift.com/v1alpha1"
+kind: "Installation"
+metadata:
+  name: "istio-installation"
+spec:
+  deployment_type: openshift
+  istio:
+    authentication: false
+    community: false
+    prefix: openshift-istio-tech-preview/
+    version: 0.2.0
+  jaeger:
+    prefix: distributed-tracing-tech-preview/
+    version: 1.7.0
+    elasticsearch_memory: 1Gi
+  kiali:
+    username: admin    
+    password: admin 
+    prefix: openshift-istio-tech-preview/
+    version: 0.7.2

@@ -1,11 +1,10 @@
 # Istio on Openshift
 
-This write up covers my notes on running Istio on OpenShift. As I test with different implementations of OpenShift (such as minishift or a real openshift cluster), I'll add additional links here.
 
 ## Deploying Istio
 
 * [Deploying Istio with minishift](./DeployingIstioWithMinishift.md)
-* Deploying Istio on OpenShift Cluster - Under Construction
+* [Installing Istio on an OpenShift Cluster](./InstallingIstioOnOpenshift.md) 
 
 ## Supporting Services
 * [Understanding Supporting Services](./UsingIstioSupportingServices.md)
