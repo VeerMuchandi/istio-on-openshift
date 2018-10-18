@@ -12,7 +12,7 @@ LICENSE		bin		istio.VERSION	tools
 README.md	install		samples
 ```
 
-### Install Bookinfo sample application
+### Deploy Bookinfo sample application
 
 We will deploy the sample bookinfo application explained in the [istiodocs](https://istio.io/docs/guides/bookinfo.html). The instructions are more or less the same as kubernetes with some slight variations. Hence I have documented the openshift deployment process here.
 
@@ -108,80 +108,36 @@ ratings       ClusterIP   172.30.119.188   <none>        9080/TCP   30s
 reviews       ClusterIP   172.30.142.212   <none>        9080/TCP   29s
 ```
 
-In order to make your application accessible from outside the cluster, an [Istio Gateway](https://istio.io/docs/concepts/traffic-management/#gateways) is required.
+### Create a Gateway to access your application
+
+In order to make your application accessible from outside the cluster, an [Istio Gateway](https://istio.io/docs/concepts/traffic-management/#gateways) is required. Let us understand gateway and virtual service configurations
 
 ```
-$ kubectl apply -f samples/bookinfo/networking/bookinfo-gateway.yaml
-gateway.networking.istio.io/bookinfo-gateway created
-virtualservice.networking.istio.io/bookinfo created
-```
-This creates a gateway and a virtual service.
-
-* A [Gateway](https://istio.io/docs/reference/config/istio.networking.v1alpha3/#Gateway) configures a load balancer for HTTP/TCP traffic, most commonly operating at the edge of the mesh to enable ingress traffic for an application.
-
-* A [VirtualService](https://istio.io/docs/reference/config/istio.networking.v1alpha3/#VirtualService) defines the rules that control how requests for a service are routed within an Istio service mesh
-
-The gateway will direct all the `HTTP` traffic coming on port `80` at istio-ingressgateway to the bookinfo sample application
-
-```
-$ kubectl get gateway
-NAME               CREATED AT
-bookinfo-gateway   11s
-
-$ kubectl get gateway bookinfo-gateway -o yaml
+$ cat samples/bookinfo/networking/bookinfo-gateway.yaml
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
-  annotations:
-    kubectl.kubernetes.io/last-applied-configuration: |
-      {"apiVersion":"networking.istio.io/v1alpha3","kind":"Gateway","metadata":{"annotations":{},"name":"bookinfo-gateway","namespace":"bookinfo"},"spec":{"selector":{"istio":"ingressgateway"},"servers":[{"hosts":["*"],"port":{"name":"http","number":80,"protocol":"HTTP"}}]}}
-  clusterName: ""
-  creationTimestamp: 2018-10-10T16:46:45Z
-  generation: 1
   name: bookinfo-gateway
-  namespace: bookinfo
-  resourceVersion: "16011"
-  selfLink: /apis/networking.istio.io/v1alpha3/namespaces/bookinfo/gateways/bookinfo-gateway
-  uid: 12d4fddb-ccac-11e8-b16d-66d8cef31907
 spec:
   selector:
-    istio: ingressgateway
+    istio: ingressgateway # use istio default controller
   servers:
-  - hosts:
-    - '*'
-    port:
-      name: http
+  - port:
       number: 80
+      name: http
       protocol: HTTP
-```
-
-And the virtualservice would match the traffic at specific endpoints `/productpage`, ` /login`, `/logout` etc.
-
-```
-$ kubectl get virtualservice
-NAME       CREATED AT
-bookinfo   6h
-
-$ kubectl get virtualservice bookinfo -o yaml
+    hosts:
+    - "*"
+---
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
-  annotations:
-    kubectl.kubernetes.io/last-applied-configuration: |
-      {"apiVersion":"networking.istio.io/v1alpha3","kind":"VirtualService","metadata":{"annotations":{},"name":"bookinfo","namespace":"bookinfo"},"spec":{"gateways":["bookinfo-gateway"],"hosts":["*"],"http":[{"match":[{"uri":{"exact":"/productpage"}},{"uri":{"exact":"/login"}},{"uri":{"exact":"/logout"}},{"uri":{"prefix":"/api/v1/products"}}],"route":[{"destination":{"host":"productpage","port":{"number":9080}}}]}]}}
-  clusterName: ""
-  creationTimestamp: 2018-10-10T16:46:45Z
-  generation: 1
   name: bookinfo
-  namespace: bookinfo
-  resourceVersion: "16012"
-  selfLink: /apis/networking.istio.io/v1alpha3/namespaces/bookinfo/virtualservices/bookinfo
-  uid: 12e74346-ccac-11e8-b16d-66d8cef31907
 spec:
+  hosts:
+  - "*"
   gateways:
   - bookinfo-gateway
-  hosts:
-  - '*'
   http:
   - match:
     - uri:
@@ -197,12 +153,28 @@ spec:
         host: productpage
         port:
           number: 9080
-      
- 
+
 ```
+**Gateway**: A [Gateway](https://istio.io/docs/reference/config/istio.networking.v1alpha3/#Gateway) configures a load balancer for HTTP/TCP traffic, most commonly operating at the edge of the mesh to enable ingress traffic for an application. The above gateway will direct all the `HTTP` traffic coming on port `80` at istio-ingressgateway to the bookinfo sample application. 
 
+* The selector `istio: ingressgateway` pull the traffic coming to istio-ingressgateway service in the `istio-system` project 
+* The parameter `hosts: "*"` says that any traffic coming to this `bookinfo-gateway` for any hostname will be consumed. If we want our application to cater to specific hostnames, we should list those here instead of using `*`
+ 
+**VirtualService**: A [VirtualService](https://istio.io/docs/reference/config/istio.networking.v1alpha3/#VirtualService) defines the rules that control how requests for a service are routed within an Istio service mesh. With the above virtualservice configuration:
 
+* `gateways: - bookinfo-gateway` configures it to listens to traffic coming to `bookinfo-gateway` defined earlier
+* `host: "*"` caters to any hostnames. If we want specific hostname, we can change this to a specific hostname.
+* URI matching allows it to listen to `/productpage` etc.
 
+-----
+#### Minishift
+To deploy with minishift, since it is not multi-tenant you can just deploy the gateway and a virtual service as shown below:
+
+```
+$ kubectl apply -f samples/bookinfo/networking/bookinfo-gateway.yaml
+gateway.networking.istio.io/bookinfo-gateway created
+virtualservice.networking.istio.io/bookinfo created
+```
 The virtual service above shows that we can access product page at `/productpage` endpoint. This endpoint is for the Istio ingress i.e.,
 
 ```
@@ -210,6 +182,116 @@ $ kubectl get route -n istio-system istio-ingressgateway
 NAME                   HOST/PORT                                                PATH      SERVICES               PORT      TERMINATION   WILDCARD
 istio-ingressgateway   istio-ingressgateway-istio-system.192.168.64.72.nip.io             istio-ingressgateway   http2                   None
 ```
+
+-----
+
+-----
+#### OpenShift
+To deploy on a multi-user OpenShift cluster, since you want a separate URL for each application instance, 
+
+**Ask your organizer for the Hostname to assign to your application.**<br>
+**Ask your organizer for the Hostname to assign to your application.**<br>
+**Ask your organizer for the Hostname to assign to your application.**<br>
+**Ask your organizer for the Hostname to assign to your application.**<br>
+**Ask your organizer for the Hostname to assign to your application.**<br>
+
+If you are `user1` you will be allocated a url such as `bookinfo1.istio.apps.devday.ocpcloud.com`. The domain name may vary. Similarly `user2` may get `bookinfo2`.
+
+> **Substitute** the value in the command below before running:
+
+The command below will change assign a specific hostname in place of `*`, before creating gateway and virtual service for your application.
+ 
+```
+sed "s/*/bookinfo1.istio.apps.devday.ocpcloud.com/" samples/bookinfo/networking/bookinfo-gateway.yaml | kubectl apply -f - 
+```
+You will see the following configurations for gateway and virtualservice. Look at the `hosts` parameters. 
+
+```
+$ kubectl get gateway bookinfo-gateway -o yaml
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"networking.istio.io/v1alpha3","kind":"Gateway","metadata":{"annotations":{},"name":"bookinfo-gateway","namespace":"bookinfo1"},"spec":{"selector":{"istio":"ingressgateway"},"servers":[{"hosts":["bookinfo1.istio.apps.devday.ocpcloud.com"],"port":{"name":"http","number":80,"protocol":"HTTP"}}]}}
+  clusterName: ""
+  creationTimestamp: 2018-10-18T01:01:17Z
+  generation: 1
+  name: bookinfo-gateway
+  namespace: bookinfo1
+  resourceVersion: "4500380"
+  selfLink: /apis/networking.istio.io/v1alpha3/namespaces/bookinfo1/gateways/bookinfo-gateway
+  uid: 517d308a-d271-11e8-900a-069c4762f7ea
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - hosts:
+    - bookinfo1.istio.apps.devday.ocpcloud.com
+    port:
+      name: http
+      number: 80
+      protocol: HTTP
+      
+      
+-----
+
+$ kubectl get virtualservice bookinfo -o yaml
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"networking.istio.io/v1alpha3","kind":"VirtualService","metadata":{"annotations":{},"name":"bookinfo","namespace":"bookinfo1"},"spec":{"gateways":["bookinfo-gateway"],"hosts":["bookinfo1.istio.apps.devday.ocpcloud.com"],"http":[{"match":[{"uri":{"exact":"/productpage"}},{"uri":{"exact":"/login"}},{"uri":{"exact":"/logout"}},{"uri":{"prefix":"/api/v1/products"}}],"route":[{"destination":{"host":"productpage","port":{"number":9080}}}]}]}}
+  clusterName: ""
+  creationTimestamp: 2018-10-18T01:01:17Z
+  generation: 1
+  name: bookinfo
+  namespace: bookinfo1
+  resourceVersion: "4500381"
+  selfLink: /apis/networking.istio.io/v1alpha3/namespaces/bookinfo1/virtualservices/bookinfo
+  uid: 51a76501-d271-11e8-900a-069c4762f7ea
+spec:
+  gateways:
+  - bookinfo-gateway
+  hosts:
+  - bookinfo1.istio.apps.devday.ocpcloud.com
+  http:
+  - match:
+    - uri:
+        exact: /productpage
+    - uri:
+        exact: /login
+    - uri:
+        exact: /logout
+    - uri:
+        prefix: /api/v1/products
+    route:
+    - destination:
+        host: productpage
+        port:
+          number: 9080
+
+```
+
+In order to access this application from outside the cluster you will use `bookinfo1.istio.apps.devday.ocpcloud.com`. 
+
+So how does the routing work?
+
+We have a wildcard route exposed for `istio-ingressgateway` service on our openshift cluster. In my case it was `www.istio.apps.devday.ocpcloud.com` with `wildcardPolicy: Subdomain`. This means when we access any hostname `*.istio.apps.devday.ocpcloud.com`, it will be listened to by the `istio-ingressgateway` service. Based on the gateway and virtualservice configurations discussed above, the traffic will land in your application. 
+
+To summarize the routing:
+
+`Client` --> `OpenShiftRouter`--> `istio-ingressgateway`-->`bookinfo-gateway`--> `bookinfo virtualservice`--> `productpage`
+
+* OpenShift router receives the traffic for the default domain (in my case `*.apps.devday.ocpcloud.com`)
+* Istio-ingressgateway service receives the traffic via wildcard route (in my case it is configured for `www.istio.apps.devday.ocpcloud.com` means it receives any `*.istio.apps.devday.ocpcloud.com`)
+* `bookinfo-gateway` receives traffic for specific application hostname (in the above case `bookinfo1.istio.apps.devday.ocpcloud.com`)
+* `bookinfo virtualservice` redirects the traffic to specific endpoints exposed by the application.
+
+-----
+
+
 
 > **Note** Your URLs would be different from mine. So use your values. If you want  to know your URLs run `kubectl get route -n istio-system`
 
@@ -383,7 +465,7 @@ kubectl -n bookinfo delete pods --all 		# deletes all pods
 In this chapter
 
 * We have deployed our sample Bookinfo application and tested it
-* Created a gateway to reach the application
+* Created a gateway and virtualservice to reach the application. 
 * Added destination rules to set up routing rules later
 * We also looked at how to monitor and trace this application using Istio's supported services
 
