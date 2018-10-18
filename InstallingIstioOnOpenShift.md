@@ -225,6 +225,81 @@ oc delete project istio-system
 
 ## Preparing Istio Cluster for a Multi-user Workshop
 
+### Change OpenShift Router to handle Wildcard routes
+
+We'll configure OpenShift router to use Wildcard routes following the [documentation here](https://docs.openshift.com/container-platform/3.10/install_config/router/default_haproxy_router.html#using-wildcard-routes). This way we can expose a wildcard route for the `istio-ingressgateway` service. Once you have wildcard route for istio-ingressgateway, we can extend that route for each application to have a unique route.
+
+Run the following command to enable wildcard routes on the router in the `default` project
+
+```
+oc set env dc/router ROUTER_ALLOW_WILDCARD_ROUTES=true
+```
+The above command will edit the deployment configuration for the router and redeploy the router pods. Once the router pods are up and running, move forward.
+
+### Expose a Wildcard Route for Istio Ingress Gateway
+
+If you check the routes in the `istio-system` project, istio-installer should have already created an openshift route for the service `istio-ingressgateway`.
+
+```
+# oc get route istio-ingressgateway -n istio-system
+NAME                   HOST/PORT                                                    PATH      SERVICES               PORT      TERMINATION   WILDCARD
+istio-ingressgateway   istio-ingressgateway-istio-system.apps.devday.ocpcloud.com             istio-ingressgateway   http2                   None
+```
+This is a single entry point for all your application traffic running on Istio. If we want to run multiple applications we want to access them with different URLs.
+
+One way to accomplish that currently is to create a wildcard route for `istio-ingressgateway`. Since we enabled wildcard routes on our OpenShift cluster, let us expose a wildcard route for `istio-ingressgateway` service.
+
+>**Note** substitute your own domain name for the `hostname` parameter. In my case `apps.devday.ocpcloud.com` is my openshift default domain. I have added `istio` to qualify all the istio applications. 
+
+```
+oc expose svc istio-ingressgateway --hostname="www.istio.apps.devday.ocpcloud.com" --port=http2 --name=istio-wildcard-ingress --wildcard-policy=Subdomain
+```
+
+
+This creates a route with the following configuration:
+
+```
+# oc get route istio-wildcard-ingress -o yaml -n istio-system
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  creationTimestamp: 2018-10-18T00:29:43Z
+  labels:
+    app: istio-ingressgateway
+    chart: gateways-1.0.1
+    heritage: Tiller
+    istio: ingressgateway
+    maistra-version: 0.2.0
+    release: istio-1.0.2
+  name: istio-wildcard-ingress
+  namespace: istio-system
+  resourceVersion: "4494685"
+  selfLink: /apis/route.openshift.io/v1/namespaces/istio-system/routes/istio-wildcard-ingress
+  uid: e89fc12a-d26c-11e8-900a-069c4762f7ea
+spec:
+  host: www.istio.apps.devday.ocpcloud.com
+  port:
+    targetPort: http2
+  to:
+    kind: Service
+    name: istio-ingressgateway
+    weight: 100
+  wildcardPolicy: Subdomain
+status:
+  ingress:
+  - conditions:
+    - lastTransitionTime: 2018-10-18T00:29:43Z
+      status: "True"
+      type: Admitted
+    host: www.istio.apps.devday.ocpcloud.com
+    routerName: router
+    wildcardPolicy: Subdomain
+```
+
+The `wildcardPolicy: Subdomain` in this configuration allows us to create specific hostnames for application such as `bookinfo1.istio.apps.devday.ocpcloud.com`, `bookinfo2.istio.apps.devday.ocpcloud.com` etc. **Of course, you will have your own domain names substitued in this example.**
+
+When we deploy an application later, we will learn how to configure application specific hostnames into the application gateway and virtualservice.
+
 ### Additional access to the users 
 
 As of now, each user that needs to run Istio examples need `view` access to the `istio-system` project. You can provide such access by running the following command for each user:
