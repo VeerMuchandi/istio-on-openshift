@@ -4,7 +4,7 @@
 ## Deploying Istio
 
 * [Deploying Istio with minishift](./DeployingIstioWithMinishift.md)
-* [Installing Istio on an OpenShift Cluster](./InstallingIstioOnOpenshift.md) 
+* [Installing Istio on an OpenShift Cluster](./InstallingIstioOnOpenShift.md) 
 
 ## Supporting Services
 * [Understanding Supporting Services](./UsingIstioSupportingServices.md)
