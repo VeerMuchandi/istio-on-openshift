@@ -1,69 +1,92 @@
 # Deploying sample application
 
+>**Note**: You could be running these labs from Minishift or an OpenShift cluster. There are slight variations based which environment you are using. As an example, project names will be different in order to make them unique in a multi-user OpenShift cluster as opposed to using a single user minishift. Those changes have been documented. So please read carefully before executing the commands.
+
 ### Prerequisites
 
-* Istio is installed and running 
-* Istio samples and tools are also available on your desktop
-* Your CLI is changed to the folder where Istio samples are downloaded i.e, when you list the files you should see this
+* Istio is installed and running on either Minishift or OpenShift.
+* Your administrator has assigned you a userid to run these samples. If you are using minishift, you have provided necessary access to the user `developer`.
+* A project has been created, and istio-injection enabled, the `default` service account has been given access for Istio
+* If running on OpenShift, your administrator has given you a hostname to use with your application instance.
+
+### Download Istio Samples
+
+While we are already running Istio, let us do some extra steps to get the samples and istio cli downloaded to our box. 
+
+You can download Istio binaries and samples corresponding to your OS from here [https://github.com/istio/istio/releases](https://github.com/istio/istio/releases) 
+
+If you are using Mac or Linux you can run the following command that will extract the latest release automatically
+
+```
+curl -L https://git.io/getLatestIstio | sh -
+```
+
+I am testing with Istio version `1.0.2`. 
+
+Change over to the folder where Istio samples are downloaded 
+```
+cd istio-1.0.2
+```
+
+When you list the files you should see this
 
 ```
 $ ls
 LICENSE		bin		istio.VERSION	tools
 README.md	install		samples
 ```
+This is where you will execute all subsequent commands for application deployment from.
+
+Set the path to `istioctl` binary or copy to a location where it can run. As an example on Mac, I am copying istioctl to `/usr/local/bin` so that I can run this command. Verify running `istioctl version`.
+
+```
+$ cp bin/istioctl /usr/local/bin
+
+$ which istioctl
+/usr/local/bin/istioctl
+
+$ istioctl version
+Version: 1.0.2
+GitRevision: d639408fded355fb906ef2a1f9e8ffddc24c3d64
+User: root@66ce69d4a51e
+Hub: gcr.io/istio-release
+GolangVersion: go1.10.1
+BuildStatus: Clean
+```
+
+
 
 ### Deploy Bookinfo sample application
 
 We will deploy the sample bookinfo application explained in the [istiodocs](https://istio.io/docs/guides/bookinfo.html). The instructions are more or less the same as kubernetes with some slight variations. Hence I have documented the openshift deployment process here.
 
-Create a new project for the application
+
+Login with the userid (such as `user1`) assigned to you by the administrator. If you are using minishift you will login as `developer` by running the following command.
+
+> **Note** substitute the userid assigned to you.
 
 ```
-$ oc new-project bookinfo
-Now using project "bookinfo" on server "https://127.0.0.1:8443".
-
-You can add applications to this project with the 'new-app' command. For example, try:
-
-    oc new-app centos/ruby-22-centos7~https://github.com/openshift/ruby-ex.git
-
-to build a new example application in Ruby.
+oc login -u developer
 ```
 
-When we install the bookinfo application, the application pods have init containers whose `proxy_init` runs in privileged mode and adds `NET_ADMIN`
-as shown here. You will find this in the individual `deployment` artifacts.
+Now if you list the projects you should see access to a `bookinfo` project and `istio-system` project. If you are running on OpenShift, the bookinfo project may be named differently based on your userid. Example: `bookinfo1` if you are `user1`  to make it unique to each user.
 
 ```
-      initContainers:
-      - args:
-        - -p
-        - "15001"
-        - -u
-        - "1337"
-        - -m
-        - REDIRECT
-        - -i
-        - '*'
-        - -x
-        - ""
-        - -b
-        - 9080,
-        - -d
-        - ""
-        image: docker.io/istio/proxy_init:1.0.2
-        imagePullPolicy: IfNotPresent
-        name: istio-init
-        resources: {}
-        securityContext:
-          capabilities:
-            add:
-            - NET_ADMIN
-          privileged: true
-```
-
-These application pods current run as `default` service account in a project. Hence we have to provide `privileged` access to the `default` account. Eventually, these examples should change to not require privileged access. But in the meanwhile, here is how you can set `default` service account to `privileged` security context constraint (scc) in the `bookinfo` project/namespace.
+$ oc get projects
+NAME           DISPLAY NAME   STATUS
+bookinfo                      Active
+istio-system                  Active
+...
+...
 
 ```
-oc adm policy add-scc-to-user privileged -z default -n bookinfo
+
+Switch your context to bookinfo project assigned to you by running a command like:
+
+> **Note** Change the project name to the one assigned to you
+
+```
+oc project bookinfo
 ```
 
 Let's now deploy the `bookinfo` application. We are using `istioctl kube-inject` to add `Envoy` sidecar proxies to each of the kubernetes deployment yamls and using the resultant deployment yamls to create an application.

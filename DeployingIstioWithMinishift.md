@@ -3,7 +3,7 @@
 This chapter explains deploying Istio with Minishift. This documentation is written for **minishift v1.25** with **openshift version 1.10**.
 
 
-###Prerequisites
+## Prerequisites
 
 * [Minishift v1.25](https://docs.okd.io/latest/minishift/getting-started/installing.html) installed on your box. I have tested this with the following version of minishift running on my box
 
@@ -21,7 +21,9 @@ kubernetes v1.10.0+b81c8f8
 features: Basic-Auth
 ```
 
-### Create a Minishift Profile and Start Minishift
+## Setting up Istio
+
+### Create Minishift Profile and Start Minishift
 
 We will create a minishift profile named `servicemesh`.
 
@@ -48,6 +50,17 @@ Now start the minishift instance
 ```
  minishift start
 ```
+
+### Login as Administrator
+
+Now that minishift has started, login as administrator to minishift by running
+
+```
+oc login -u system:admin
+```
+The above command will switch the user to administrator to your own minishift.
+
+### Istio Addon for Minishift
 
 Let us download the `istio addon` for minishift. 
 
@@ -142,6 +155,8 @@ Now you have an OpenShift cluster running on your box along with openshift istio
 
 
 ### Verify Istio
+
+> **Note** You should be logged in as `system:admin` to accomplish the tasks in this section. `oc login -u system:admin`
 
 Switch over to `istio-system` project and understand all the components that are deployed. Look at the service accounts, pods, and different types of custom resource definitions added by the previous step. You will find the 5 core components of Istio running as pods and their correspoding deployments i.e, ca, pilot, mixer, ingress and egress.
 
@@ -333,43 +348,82 @@ tracing                tracing-istio-system.192.168.64.72.nip.io                
 Now the url [istio-ingressgateway-istio-system.192.168.64.72.nip.io](istio-ingressgateway-istio-system.192.168.64.72.nip.io) is my ingress point. You also see a bunch of other routes for jaeeger, grafana, prometheus etc. All these are also exposed by the installer for you. You can reach the respective applications using those routes. 
 
 
-Istio is now up and running.
+**Istio is now up and running.**
+
+## Preparing for Application Deployment
+
+### Preparing the user `developer`
+
+> **Note** You should be logged in as `system:admin` to accomplish the tasks in this section. `oc login -u system:admin`
+
+Now that Istio is set up and running on Minishift, we want to run our samples as a regular user. Minishift creates a user `developer` by default. Although minishift is not a multi-user environment and is just a private cluster of your own, for our examples, we will treat it like one. 
 
 
-### Download Istio Samples
-
-While we are already running Istio on minishift now, let us do some extra steps to get the samples and istio cli downloaded to our box. 
-
-You can download Istio binaries and samples corresponding to your OS from here [https://github.com/istio/istio/releases](https://github.com/istio/istio/releases) 
-
-If you are using Mac or Linux you can run the following command that will extract the latest release automatically
-
-```
-curl -L https://git.io/getLatestIstio | sh -
-```
-
-I am testing with Istio version `1.0.2`. 
+As of now, a user that needs to run Istio examples need view access to the istio-system project. You can provide such access by running the following command:
 
 ```
-cd istio-1.0.2
+oc adm policy add-role-to-user view developer -n istio-system
 ```
 
-Set the path to `istioctl` binary or copy to a location where it can run. As an example on Mac, I am copying istioctl to `/usr/local/bin` so that I can run this command. Verify running `istioctl version`.
+### Additional Access to Project
+
+Applications are deployed in to projects/namespaces. On OpenShift the applications running in a namespace run with a `default` service account. This `default` service account runs with `restricted` SCC, which prevents it from running containers as specific user-ids or root, and also has restrictions on the linux capabilities. 
+
+Istio requires specific kinds of access at the project level:
+
+* Project needs to be labeled as `istio-injection=enabled` to let Istio know that this project can be used to enable automatic injection of side cars
+* As of now, the `default` service account need to be elevated to `privileged` SCC, so that it can allow the application pods to have init containers whose `proxy_init` runs in privileged mode and adds `NET_ADMIN`
+as shown here. You will find this configuration in the individual `deployment` artifacts when you deploy the application.
 
 ```
-$ cp bin/istioctl /usr/local/bin
-
-$ which istioctl
-/usr/local/bin/istioctl
-
-$ istioctl version
-Version: 1.0.2
-GitRevision: d639408fded355fb906ef2a1f9e8ffddc24c3d64
-User: root@66ce69d4a51e
-Hub: gcr.io/istio-release
-GolangVersion: go1.10.1
-BuildStatus: Clean
+      initContainers:
+      - args:
+        - -p
+        - "15001"
+        - -u
+        - "1337"
+        - -m
+        - REDIRECT
+        - -i
+        - '*'
+        - -x
+        - ""
+        - -b
+        - 9080,
+        - -d
+        - ""
+        image: docker.io/istio/proxy_init:1.0.2
+        imagePullPolicy: IfNotPresent
+        name: istio-init
+        resources: {}
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
+          privileged: true
 ```
+
+Let's create a project named `bookinfo` for the user `developer`, label this project for istio-injection, and make `developer` a project administrator. 
+
+```
+oc adm new-project bookinfo --admin=developer
+oc label namespace bookinfo istio-injection=enabled
+oc adm policy add-scc-to-user privileged -z default -n bookinfo
+```
+
+Now, if you login as `developer`, you will see both `bookinfo` and `istio-system` on the project list.
+
+
+## Summary
+
+In this chapter we learnt to perform the following administrative tasks:
+
+* Start Minishift 
+* Deploy Istio on Minishift
+* Verify that Minishift is running
+* Enabled `developer` to run applications on minishift cluster
+* Created a project for `developer` to use and set necessary privileges
+
 
 
 

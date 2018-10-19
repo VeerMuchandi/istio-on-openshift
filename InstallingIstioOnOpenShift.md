@@ -358,5 +358,13 @@ oc label namespace bookinfo1 istio-injection=enabled
 Now, if a user logs in as `user1`, they will see both `bookinfo1` and `istio-system` in their list.
 
 
+## Summary
 
+In this chapter we learnt to perform the following administrative tasks on an OpenShift cluster:
+
+* Preparing an OpenShift cluster to install Istio
+* Installed Istio
+* Set up Wildcard Router and a Wildcard route for istio-ingressgateway
+* Enabled user(s) to run applications on Istio
+* Created a project(s) with necessary privileges for end users to use 
 
