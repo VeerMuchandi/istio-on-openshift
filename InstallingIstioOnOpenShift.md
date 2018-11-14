@@ -4,7 +4,7 @@ Here we will learn the administrative steps to deploy Istio on OpenShift and set
 
 >**Note** Istio on OpenShift is still Tech Preview. So, these labs are to learn how things are shaping up. Technology Preview releases are not supported with Red Hat production service-level agreements (SLAs) and might not be functionally complete, and Red Hat does NOT recommend using them for production. 
 
-These steps have been tested for OCP 3.10.14.
+These steps have been tested for `OCP 3.11.16`.
 
 ## Prerequisites
 * A Running OpenShift Cluster that is deployed either using `ovs-subnet` or `ovs-networkpolicy` plugins
@@ -22,14 +22,14 @@ admissionConfig:
   pluginConfig:
     MutatingAdmissionWebhook:
       configuration:
-        apiVersion: v1
-        disable: false
-        kind: DefaultAdmissionConfig
+        apiVersion: apiserver.config.k8s.io/v1alpha1
+        kubeConfigFile: /dev/null
+        kind: WebhookAdmission
     ValidatingAdmissionWebhook:
       configuration:
-        apiVersion: v1
-        disable: false
-        kind: DefaultAdmissionConfig
+        apiVersion: apiserver.config.k8s.io/v1alpha1
+        kubeConfigFile: /dev/null
+        kind: WebhookAdmission
 ```
 
 You can download the patch first, take a back up and use `oc ex config patch` using the patch and the backup files to apply the patch as shown below:
@@ -37,7 +37,7 @@ You can download the patch first, take a back up and use `oc ex config patch` us
 ```
 mkdir istio-install
 cd istio-install
-wget https://raw.githubusercontent.com/openshift-istio/openshift-ansible/istio-3.10-1.0.0-snapshot.2/istio/master-config.patch
+wget https://raw.githubusercontent.com/Maistra/openshift-ansible/maistra-0.4/istio/master-config.patch
 cp -p /etc/origin/master/master-config.yaml /etc/origin/master/master-config.yaml.prepatch
 oc ex config patch /etc/origin/master/master-config.yaml.prepatch -p "$(cat ./master-config.patch)" > /etc/origin/master/master-config.yaml
 ```
@@ -54,14 +54,14 @@ admissionConfig:
     ....
     MutatingAdmissionWebhook:
       configuration:
-        apiVersion: v1
-        disable: false
-        kind: DefaultAdmissionConfig
+        apiVersion: apiserver.config.k8s.io/v1alpha1
+        kind: WebhookAdmission
+        kubeConfigFile: /dev/null
     ValidatingAdmissionWebhook:
       configuration:
-        apiVersion: v1
-        disable: false
-        kind: DefaultAdmissionConfig
+        apiVersion: apiserver.config.k8s.io/v1alpha1
+        kind: WebhookAdmission
+        kubeConfigFile: /dev/null
     ....
     ....
     
@@ -125,10 +125,10 @@ metadata:
 spec:
   deployment_type: openshift
   istio:
-    authentication: false
+    authentication: true 
     community: false
     prefix: openshift-istio-tech-preview/
-    version: 0.2.0
+    version: 0.3.0
   jaeger:
     prefix: distributed-tracing-tech-preview/
     version: 1.7.0
@@ -137,12 +137,10 @@ spec:
     username: admin    
     password: admin 
     prefix: openshift-istio-tech-preview/
-    version: 0.7.2
-
+    version: 0.8.1
 ```
 This file is also available [here](./istio_installation.yaml), if you want to directly use it.
 
->**Note** Kiali version should be 0.7.2 and not v0.7.2 as that is how it is tagged in the RedHat Registry
 
 ### Start Installation
 
@@ -152,7 +150,7 @@ Create a new project with name `istio-operator` and invoke the operator template
 
 ```
 oc new-project istio-operator
-oc new-app https://raw.githubusercontent.com/Maistra/openshift-ansible/maistra-0.2.0-ocp-3.1.0-istio-1.0.2/istio/istio_product_operator_template.yaml --param OPENSHIFT_ISTIO_MASTER_PUBLIC_URL=master.devday.ocpcloud.com --param OPENSHIFT_RELEASE=v3.10.14
+oc new-app -f https://raw.githubusercontent.com/Maistra/openshift-ansible/maistra-0.3/istio/istio_product_operator_template.yaml --param OPENSHIFT_ISTIO_MASTER_PUBLIC_URL=master.devday.ocpcloud.com --param OPENSHIFT_RELEASE=v3.11.16
 ```
 
 This will start an istio-operator pod that starts the installation. 
@@ -216,7 +214,7 @@ kiali-76b6f689f6-ghj74                        1/1       Running     0          3
 * delete the two project `istio-operator` and `istio-system`
 
 ```
-oc process -n istio-operator -f https://raw.githubusercontent.com/Maistra/openshift-ansible/maistra-0.2.0-ocp-3.1.0-istio-1.0.2/istio/istio_product_operator_template.yaml | oc delete -f -
+oc process -n istio-operator -f https://raw.githubusercontent.com/Maistra/openshift-ansible/maistra-0.3/istio/istio_product_operator_template.yaml | oc delete -f -
 
 oc delete -n istio-operator installation istio-installation
 oc delete project istio-operator
@@ -296,7 +294,7 @@ status:
     wildcardPolicy: Subdomain
 ```
 
-The `wildcardPolicy: Subdomain` in this configuration allows us to create specific hostnames for application such as `bookinfo1.istio.apps.devday.ocpcloud.com`, `bookinfo2.istio.apps.devday.ocpcloud.com` etc. **Of course, you will have your own domain names substitued in this example.**
+The `wildcardPolicy: Subdomain` in this configuration allows us to create specific hostnames for application such as `bookinfo1.istio.apps.devday.ocpcloud.com`, `bookinfo2.istio.apps.devday.ocpcloud.com` etc. **Of course, you will have your own domain names substituted in this example.**
 
 When we deploy an application later, we will learn how to configure application specific hostnames into the application gateway and virtualservice.
 
@@ -351,6 +349,7 @@ Let's create a project named `bookinfo1` for a workshop user named `user1`, labe
 
 ```
 oc new-project bookinfo1
+oc adm policy add-scc-to-user privileged -z default -n bookinfo1
 oc adm policy add-role-to-user admin user1 -n bookinfo1
 oc label namespace bookinfo1 istio-injection=enabled
 ```
