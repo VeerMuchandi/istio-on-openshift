@@ -374,13 +374,16 @@ A [DestinationRule](https://istio.io/docs/reference/config/istio.networking.v1al
 Let us first look at these destination rules. These are four rules applies to **productpage**, **reviews**, **ratings** and **details**. The rules define subsets based on the *version* labels. These subsets will be used in the future labs for traffic shaping. 
 
 ```
-$ cat samples/bookinfo/networking/destination-rule-all.yaml
+$ cat samples/bookinfo/networking/destination-rule-all-mtls.yaml
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
   name: productpage
 spec:
   host: productpage
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
   subsets:
   - name: v1
     labels:
@@ -392,6 +395,9 @@ metadata:
   name: reviews
 spec:
   host: reviews
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
   subsets:
   - name: v1
     labels:
@@ -409,6 +415,9 @@ metadata:
   name: ratings
 spec:
   host: ratings
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
   subsets:
   - name: v1
     labels:
@@ -429,6 +438,9 @@ metadata:
   name: details
 spec:
   host: details
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
   subsets:
   - name: v1
     labels:
@@ -442,7 +454,7 @@ spec:
 Let us now apply these labels by running
 
 ```
-kubectl apply -f samples/bookinfo/networking/destination-rule-all.yaml
+kubectl apply -f samples/bookinfo/networking/destination-rule-all-mtls.yaml
 ```
 
 Get back to Kiala menu option `Istio Config` on the left to find these destination rules. **Istio Config** can be used to view all the rules applied on the traffic at any point of time.
