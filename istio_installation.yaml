@@ -5,10 +5,10 @@ metadata:
 spec:
   deployment_type: openshift
   istio:
-    authentication: false
+    authentication: true 
     community: false
     prefix: openshift-istio-tech-preview/
-    version: 0.2.0
+    version: 0.3.0
   jaeger:
     prefix: distributed-tracing-tech-preview/
     version: 1.7.0
@@ -17,4 +17,4 @@ spec:
     username: admin    
     password: admin 
     prefix: openshift-istio-tech-preview/
-    version: 0.7.2
+    version: 0.8.1
