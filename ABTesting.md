@@ -61,9 +61,16 @@ Let's now test the app again by pumping some load
 
 ```
 export URL=$(kubectl get route istio-ingressgateway -n istio-system -o yaml -o jsonpath={.spec.host})
+```
 
+Let us send 100 requests
+```
 for i in {1..100}; do curl -o /dev/null -s -w "%{http_code}\n" http://${URL}/productpage; done
 ```
+
+> **Note** If you are using a header `Host: bookinfo1.istio.apps.devday.ocpcloud.com` then you would want to include header in the curl as well, as shown below (substitute your own hostname)
+>`for i in {1..100}; do curl -o /dev/null -s -w "%{http_code}\n" -H "Host: bookinfo1.istio.apps.devday.ocpcloud.com" http://${URL}/productpage; done` 
+
 
 Notice that the traffic being split would be approximately equal between reviews v1 and v3 on the service graph as shown below. There wouldn't be any traffic to reviews v2. 
 ![](./images/servicegraph3.png)
