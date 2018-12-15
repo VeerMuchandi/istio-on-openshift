@@ -325,7 +325,7 @@ To summarize the routing:
 Save this URL as an environment variable
 
 ```
-export URL=$(kubectl get route istio-ingressgateway -n istio-system -o yaml -o jsonpath={.spec.host})
+export URL=$(kubectl get virtualservice bookinfo -o yaml -o jsonpath={.spec.hosts[0]})
 ```
 So I can access the product page at the URL [http://${URL}/productpage](http://${URL}/productpage). 
 
