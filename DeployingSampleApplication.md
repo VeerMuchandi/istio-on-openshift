@@ -21,11 +21,11 @@ If you are using Mac or Linux you can run the following command that will extrac
 curl -L https://git.io/getLatestIstio | sh -
 ```
 
-I am testing with Istio version `1.0.2`. 
+I am testing with Istio version `1.0.4`. 
 
 Change over to the folder where Istio samples are downloaded 
 ```
-cd istio-1.0.2
+cd istio-1.0.4
 ```
 
 When you list the files you should see this
@@ -45,12 +45,12 @@ $ cp bin/istioctl /usr/local/bin
 $ which istioctl
 /usr/local/bin/istioctl
 
-$ istioctl version
-Version: 1.0.2
-GitRevision: d639408fded355fb906ef2a1f9e8ffddc24c3d64
-User: root@66ce69d4a51e
-Hub: gcr.io/istio-release
-GolangVersion: go1.10.1
+$ $ istioctl version
+Version: 1.0.4
+GitRevision: d5cb99f479ad9da88eebb8bb3637b17c323bc50b
+User: root@8c2feba0b568
+Hub: docker.io/istio
+GolangVersion: go1.10.4
 BuildStatus: Clean
 ```
 
@@ -66,7 +66,7 @@ Login with the userid (such as `user1`) assigned to you by the administrator. If
 > **Note** substitute the userid assigned to you.
 
 ```
-oc login -u developer
+oc login -u YourUserId
 ```
 
 Now if you list the projects you should see access to a `bookinfo` project and `istio-system` project. If you are running on OpenShift, the bookinfo project may be named differently based on your userid. Example: `bookinfo1` if you are `user1`  to make it unique to each user.
@@ -220,12 +220,16 @@ To deploy on a multi-user OpenShift cluster, since you want a separate URL for e
 
 If you are `user1` you will be allocated a url such as `bookinfo1.istio.apps.devday.ocpcloud.com`. The domain name may vary. Similarly `user2` may get `bookinfo2`.
 
-> **Substitute** the value in the command below before running:
+Create an environment variable with the hostname allocated to you as below
+> **Substitute** the value in the command before running
+```
+export APPHOSTNAME=bookinfo1.istio.apps.devday.ocpcloud.com
+```
 
 The command below will change assign a specific hostname in place of `*`, before creating gateway and virtual service for your application.
  
 ```
-sed "s/*/bookinfo1.istio.apps.devday.ocpcloud.com/" samples/bookinfo/networking/bookinfo-gateway.yaml | kubectl apply -f - 
+sed "s/*/$APPHOSTNAME/" samples/bookinfo/networking/bookinfo-gateway.yaml | kubectl apply -f - 
 ```
 You will see the following configurations for gateway and virtualservice. Look at the `hosts` parameters. 
 

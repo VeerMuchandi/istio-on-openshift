@@ -104,7 +104,6 @@ ansible nodes -i hostnames.txt -m shell -a "sysctl vm.max_map_count=262144"
 
 Installing Istio on OpenShift involves creating a custom resource definition file, then installing mesh an using operator to create and manage the custom resource. 
 
-> **Note**  As of the Tech Preview, there is a cyclic dependency between the CRD and Operator, wherein CRD depends on the Operator to create a custom resource definition for `installations.istio.openshift.com` and Operator depends on `istio-installation` CRD. The following the steps have been tried successfully in spite of such dependencies.
 
 ### Create the CRD file
 
@@ -113,8 +112,8 @@ Create a file with name `istio_installation.yaml` with the following contents. T
 This configuration instructs the operator 
 * to install istio on an OCP cluster (`deployment_type: openshift`)
 * the version of istio is tech preview
-* install jaeger 1.7.0 for tracing and to use elasticsearch with `1Gi` memory
-* install kiali 0.7.0 for observability and the credentials to log onto kiali are `admin/admin`. You may want to change these to values of your choice.
+* install jaeger 1.8.1 for tracing and to use elasticsearch with `1Gi` memory
+* install kiali 0.10.1 for observability and the credentials to log onto kiali are `admin/admin`. You may want to change these to values of your choice.
 
 ```
 # cat istio-installation.yaml 
@@ -128,16 +127,16 @@ spec:
     authentication: true 
     community: false
     prefix: openshift-istio-tech-preview/
-    version: 0.3.0
+    version: 0.5.0
   jaeger:
     prefix: distributed-tracing-tech-preview/
-    version: 1.7.0
+    version: 1.8.1
     elasticsearch_memory: 1Gi
   kiali:
     username: admin    
     password: admin 
     prefix: openshift-istio-tech-preview/
-    version: 0.8.1
+    version: 0.10.1
 ```
 This file is also available [here](./istio_installation.yaml), if you want to directly use it.
 
@@ -150,7 +149,7 @@ Create a new project with name `istio-operator` and invoke the operator template
 
 ```
 oc new-project istio-operator
-oc new-app -f https://raw.githubusercontent.com/Maistra/openshift-ansible/maistra-0.3/istio/istio_product_operator_template.yaml --param OPENSHIFT_ISTIO_MASTER_PUBLIC_URL=master.devday.ocpcloud.com --param OPENSHIFT_RELEASE=v3.11.16
+oc new-app -f https://raw.githubusercontent.com/Maistra/openshift-ansible/maistra-0.5/istio/istio_product_operator_template.yaml --param OPENSHIFT_ISTIO_MASTER_PUBLIC_URL=master.devday.ocpcloud.com --param OPENSHIFT_RELEASE=v3.11.16
 ```
 
 This will start an istio-operator pod that starts the installation. 
@@ -209,16 +208,22 @@ kiali-76b6f689f6-ghj74                        1/1       Running     0          3
 
 **If you need to uninstall Istio** from the OpenShift cluster, the following can be done:
 
-* delete the istio-operator tempalte
-* delete the CRDs `installation` and `istio-installation` from the project
-* delete the two project `istio-operator` and `istio-system`
+* delete the istio-operator template
+* delete the CRDs `installation` and `istio-installation` and all istio related CRDs created
+* delete cluster roles and cluster rolebindings created for istio
+* delete mutating and validaing webhooks created for istio
+* delete the two projects `istio-operator` and `istio-system`
 
 ```
-oc process -n istio-operator -f https://raw.githubusercontent.com/Maistra/openshift-ansible/maistra-0.3/istio/istio_product_operator_template.yaml | oc delete -f -
-
+oc process -f https://raw.githubusercontent.com/Maistra/openshift-ansible/maistra-0.5/istio/istio_product_operator_template.yaml | oc delete -f -
+oc delete crd $(oc get crd | grep istio.io | awk '{print $1}')
+oc delete clusterrole $(oc get clusterroles | grep istio)
+oc delete clusterrolebinding $(oc get clusterrolebinding | grep istio | awk '{print $1}'| grep ^istio)
+oc delete mutatingwebhookconfiguration istio-sidecar-injector 
+oc delete validatingwebhookconfigurations.admissionregistration.k8s.io istio-galley
 oc delete -n istio-operator installation istio-installation
 oc delete project istio-operator
-oc delete project istio-system 
+oc delete project istio-system  
 ```
 
 ## Preparing Istio Cluster for a Multi-user Workshop
@@ -350,6 +355,7 @@ Let's create a project named `bookinfo1` for a workshop user named `user1`, labe
 ```
 oc new-project bookinfo1
 oc adm policy add-scc-to-user privileged -z default -n bookinfo1
+oc adm policy add-scc-to-user anyuid -z default -n bookinfo1
 oc adm policy add-role-to-user admin user1 -n bookinfo1
 oc label namespace bookinfo1 istio-injection=enabled
 ```
