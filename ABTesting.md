@@ -60,7 +60,7 @@ Wait a few minutes until the service graph shows grey lines (0 requests/sec) eve
 Let's now test the app again by pumping some load
 
 ```
-export URL=$(kubectl get route istio-ingressgateway -n istio-system -o yaml -o jsonpath={.spec.host})
+export URL=$(kubectl get virtualservice bookinfo -o yaml -o jsonpath={.spec.hosts[0]})
 ```
 
 Let us send 100 requests

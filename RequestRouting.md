@@ -107,7 +107,7 @@ To generate some data that can be visualized by support services, you can access
 * Save the URL as an environment variable
 
 ```
-export URL=$(kubectl get route istio-ingressgateway -n istio-system -o yaml -o jsonpath={.spec.host})
+export URL=$(kubectl get virtualservice bookinfo -o yaml -o jsonpath={.spec.hosts[0]})
 ```
 
 * Invoke application in a loop
