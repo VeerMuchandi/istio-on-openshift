@@ -19,5 +19,6 @@
 * [Traffic Shifting - AB Testing](./ABTesting.md)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;     [Istio_Documentation](https://istio.io/docs/tasks/traffic-management/traffic-shifting/)
 * [Request Timeouts](./RequestTimeOut.md)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;      [Istio_Documentation](https://istio.io/docs/tasks/traffic-management/request-timeouts)
 * [Rules Precedence](./RulesPrecedence.md)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+* [Ingress Routing](./ControllingIngressTraffic.md)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;      
 * [Egress Routing](./ControllingEgressTraffic.md)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;      [Istio_Documentation](https://istio.io/docs/tasks/traffic-management/egress/)     
 * [Circuit Breaking](./CircuitBreaking.md)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [Istio_Documentation](https://istio.io/docs/tasks/traffic-management/circuit-breaking)
