@@ -21,11 +21,11 @@ If you are using Mac or Linux you can run the following command that will extrac
 curl -L https://git.io/getLatestIstio | sh -
 ```
 
-I am testing with Istio version `1.0.4`. 
+I am testing with Istio version `1.1.1`. 
 
 Change over to the folder where Istio samples are downloaded 
 ```
-cd istio-1.0.4
+cd istio-1.1.1
 ```
 
 When you list the files you should see this
@@ -36,23 +36,6 @@ LICENSE		bin		istio.VERSION	tools
 README.md	install		samples
 ```
 This is where you will execute all subsequent commands for application deployment from.
-
-Set the path to `istioctl` binary or copy to a location where it can run. As an example on Mac, I am copying istioctl to `/usr/local/bin` so that I can run this command. Verify running `istioctl version`.
-
-```
-$ cp bin/istioctl /usr/local/bin
-
-$ which istioctl
-/usr/local/bin/istioctl
-
-$ $ istioctl version
-Version: 1.0.4
-GitRevision: d5cb99f479ad9da88eebb8bb3637b17c323bc50b
-User: root@8c2feba0b568
-Hub: docker.io/istio
-GolangVersion: go1.10.4
-BuildStatus: Clean
-```
 
 
 
@@ -89,10 +72,10 @@ Switch your context to bookinfo project assigned to you by running a command lik
 oc project bookinfo
 ```
 
-Let's now deploy the `bookinfo` application. We are using `istioctl kube-inject` to add `Envoy` sidecar proxies to each of the kubernetes deployment yamls and using the resultant deployment yamls to create an application.
+Let's now deploy the `bookinfo` application. In order to inject the sidecar into the deployment, we will apply an annotation `sidecar.istio.io/inject: "true"` to our deployment.
 
 ```
-kubectl apply -f <(istioctl kube-inject -f samples/bookinfo/platform/kube/bookinfo.yaml)
+kubectl apply -f samples/bookinfo/platform/kube/bookinfo.yaml
 ```
 > **Note** you are in the folder where you downloaded Istio samples.
 
@@ -111,17 +94,25 @@ service/productpage created
 deployment.extensions/productpage-v1 created
 ```
 
-Give a few mins for the container images to be pulled and for the pods to come up. Note all the components that are running.
+As you observed above it created deployments `productpage-v1`, `details-v1`, `ratings-v1`, `reviews-v1`, `reviews-v2`, and `reviews-v3`.
+
+We will patch these deployments to add the annotation by running the following script. This script simply gets all the above deployments and applies the annotation to the podspectemplate in each deployment.
+
+```
+for i in $(kubectl get deployments -o jsonpath='{range.items[*]}{.metadata.name}{"\n"}{end}'); do echo $i; oc patch deployment $i -p '{"spec":{"template":{"metadata":{"annotations":{"sidecar.istio.io/inject": "true"}}}}}'; done
+```
+
+Give a few mins for the container images to be pulled and for the pods to come up. Note all the components that are running. Also note that `2` out of `2` containers are Ready. One of those containers is your application and the other is the sidecar.
 
 ```
 $ kubectl get po
-NAME                              READY     STATUS            RESTARTS   AGE
-details-v1-5c6798dd8d-dbbbj       0/2       PodInitializing   0          33s
-productpage-v1-6645b8588d-ztxpb   0/2       PodInitializing   0          29s
-ratings-v1-86d8c8dfcb-rqxsx       0/2       PodInitializing   0          33s
-reviews-v1-94b6b6b9d-4qhsx        0/2       PodInitializing   0          33s
-reviews-v2-5d6498bd56-v5cxv       0/2       PodInitializing   0          32s
-reviews-v3-76db6df594-927q6       0/2       PodInitializing   0          31s
+NAME                              READY     STATUS    RESTARTS   AGE
+details-v1-7bbdd88f4f-drw95       2/2       Running   0          25m
+productpage-v1-7bddcc55bc-7nxdq   2/2       Running   0          25m
+ratings-v1-798b466f7c-9q4h8       2/2       Running   0          25m
+reviews-v1-9d64cc6db-prqw7        2/2       Running   0          25m
+reviews-v2-784596cc4c-nmk2z       2/2       Running   0          7m
+reviews-v3-f97b77448-zmv6b        2/2       Running   0          25m
 
 $ kubectl get services
 NAME          TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
@@ -305,14 +296,42 @@ In order to access this application from outside the cluster you will use `booki
 
 So how does the routing work?
 
-We have a wildcard route exposed for `istio-ingressgateway` service on our openshift cluster. In my case it was `www.istio.apps.devday.ocpcloud.com` with `wildcardPolicy: Subdomain`. This means when we access any hostname `*.istio.apps.devday.ocpcloud.com`, it will be listened to by the `istio-ingressgateway` service. Based on the gateway and virtualservice configurations discussed above, the traffic will land in your application. 
+Let us take a closer look at the pods running in the `istio-system` project specifically for the `ior` pod. 
+
+```
+$ oc get po -n istio-system | grep ior
+ior-69cbb8b7f5-ch6v6                      1/1       Running   0          5h
+```
+This pod automatically creates a new route in the `istio-system` project for every `host` entry in the gateway by exposing `istio-ingressgateway`. So in the above example it creates an openshift route for based on the value assigned in the gateway
+
+```
+  - hosts:
+    - bookinfo1.istio.apps.devday.ocpcloud.com
+```
+
+So, let us check `istio-system` projects for routes for `istio-ingressgateway` service. You will see two routes.
+
+```
+$ oc get route -n istio-system | grep istio-ingressgateway
+bookinfo1-gateway-fwb55   bookinfo1.istio.apps.devday.ocpcloud.com                                      istio-ingressgateway   http2                   None
+istio-ingressgateway     istio-ingressgateway-istio-system.apps.devday.ocpcloud.com             istio-ingressgateway   80                      None
+```
+
+One of these routes is the route named `istio-ingressgateway` that was created when the Istio control plane was deployed
+The other one named as `bookinfo1-gateway-fwb55` (in your case the name could be slightly different), is the one that is just automatically added by IOR pod.
+ 
+> **Note:** If multiple people are creating their apps, there may be many routes as IOR will expose all those routes.
+
+
+
+So when you access your application hostname (in this case `bookinfo1.istio.apps.devday.ocpcloud.com`), since there is an openshift route, the request will come to `istio-ingressgateway` service. Based on the gateway and virtualservice configurations discussed above, the traffic will land in your application. 
 
 To summarize the routing:
 
 `Client` --> `OpenShiftRouter`--> `istio-ingressgateway`-->`bookinfo-gateway`--> `bookinfo virtualservice`--> `productpage`
 
 * OpenShift router receives the traffic for the default domain (in my case `*.apps.devday.ocpcloud.com`)
-* Istio-ingressgateway service receives the traffic via wildcard route (in my case it is configured for `www.istio.apps.devday.ocpcloud.com` means it receives any `*.istio.apps.devday.ocpcloud.com`)
+* Istio-ingressgateway service receives the traffic via autogenerated ior route 
 * `bookinfo-gateway` receives traffic for specific application hostname (in the above case `bookinfo1.istio.apps.devday.ocpcloud.com`)
 * `bookinfo virtualservice` redirects the traffic to specific endpoints exposed by the application.
 
